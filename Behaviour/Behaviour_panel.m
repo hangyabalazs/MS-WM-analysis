@@ -208,6 +208,6 @@ end
 
 % Generate supplementary panels
 Behaviour_panel_supp(xlsdir, resdir);
-close all;
 
+close all
 end
