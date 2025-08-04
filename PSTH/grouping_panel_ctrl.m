@@ -241,9 +241,9 @@ function grouping_panel_ctrl(resdir, speaker_dir, response_categori_ctrl, normPS
     % Saving
     set(figure(5), 'Renderer', 'painters');
     
-    fnm = [resdir '\'  'FigS5C_ctrl.svg'];
+    fnm = [resdir '\'  'FigS3C_ctrl.svg'];
     saveas(figure(5),fnm);
-    fnmm = [resdir '\'  'FigS5C_ctrl.jpg'];
+    fnmm = [resdir '\'  'FigS3C_ctrl.jpg'];
     saveas(figure(5),fnmm);
     
     close all

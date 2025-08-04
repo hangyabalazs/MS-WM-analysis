@@ -258,9 +258,9 @@ function grouping_panel_exp(resdir, speaker_dir, response_categori_exp, normPSTH
     
     % Saving;
     set(figure(5), 'Renderer', 'painters');
-    fnm = [resdir '\'  'Fig3C_exp.svg'];
+    fnm = [resdir '\'  'Fig4C_exp.svg'];
     saveas(figure(5),fnm);
-    fnmm = [resdir '\'  'Fig3C_exp.jpg'];
+    fnmm = [resdir '\'  'Fig4C_exp.jpg'];
     saveas(figure(5),fnmm);
     
     close all;
