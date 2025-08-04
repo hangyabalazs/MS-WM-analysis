@@ -7,19 +7,19 @@ function ms_wm_main
 % and supplementary figures.
 %
 % It sets up directory paths and creates results directory, generates 
-% behavioral analysis plots (Fig. 1, Fig. S1-4), processes electrophysiological
+% behavioral analysis plots (Fig. 1, Fig. S1-2), processes electrophysiological
 % data or loads existing processed data, generates statistical analysis plots
-% (Fig. 2), creates grouping analysis plots (Fig. 3, Fig. S5), performs ROC 
-% analysis and generates Fig. 4 with Fig. S6-7, and analyzes theta rhythmicity
-% using ACGs (Fig. 5, Fig. S8-10). It saves all main and supp. figures in
-% main results directory, except for Fig. 3A-B, 3C & S5C which are saved in
+% (Fig. 3), creates grouping analysis plots (Fig. 4, Fig. S3), performs ROC 
+% analysis and generates Fig. 5-6 with Fig. S4-5, and analyzes theta rhythmicity
+% using ACGs (Fig. 7, Fig. S6-7). It saves all main and supp. figures in
+% main results directory, except for Fig. 4A-B, 4C & S3C which are saved in
 % under \grouping folder.
 %
 % Example:
 %   ms_wm_main()
 %
-% See also: Behaviour_panel, process_ms_wm_data, stat_panel_fig2, 
-%           figure3_panel, roc_analysis, stat_panel_fig4, 
+% See also: Behaviour_panel, process_ms_wm_data, stat_panel_fig3, 
+%           figure4_panel, roc_analysis, stat_panel_fig5_6, 
 %           theta_rhythmicity_panel
 %
 %  Malek Aouadi, Laboratory of Systems Neuroscience
@@ -36,7 +36,7 @@ function ms_wm_main
     end
     
     % Figure 1 - Behaviour plots
-    Behaviour_panel(behav_data_fnm, resdir);
+    % Behaviour_panel(behav_data_fnm, resdir);
     
     % SPSTH analysis, ACG analysis, Delay response stat-based categorization
     try
@@ -46,13 +46,13 @@ function ms_wm_main
         cleaned_data = process_ms_wm_data(resdir); % Run analyses
     end
     
-    % Figure 2 - Task phases stats
-    stat_panel_fig2(resdir, cleaned_data);
+    % Figure 3 - Task phases stats
+    stat_panel_fig3(resdir, cleaned_data);
      
-    % Figure 3 - Delay response stat-based cell categories + S5 (ctrl)
-    figure3_panel(resdir, [resdir '\grouping'], cleaned_data, 1); 
+    % Figure 4 - Delay response stat-based cell categories + S3 (ctrl)
+    % % figure4_panel(resdir, [resdir '\grouping'], cleaned_data, 1); 
      
-    % Fig 4 - All neurons & per category stats + S6-7
+    % Fig 5-6 - All neurons & per category stats + S4-5
     rocdir = [resdir '\grouping\roc\submean']; % Directory for ROC results
 
     try
@@ -63,9 +63,9 @@ function ms_wm_main
         load([rocdir '\ROC_pvalues.mat']); % Load results
     end
     
-    stat_panel_fig4(cleaned_data, ROC, ROCtime, pvalues, resdir, 'submean');
+    stat_panel_fig5_6(cleaned_data, ROC, ROCtime, pvalues, resdir, 'submean');
     
-    % Figure 5 - Theta rhythmicity grouping + S8-10
+    % Figure 7 - Theta rhythmicity grouping + S6-7
     theta_rhythmicity_panel(resdir, cleaned_data, 'submean');
 
 end
