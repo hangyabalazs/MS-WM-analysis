@@ -44,8 +44,8 @@ function theta_piecharts_supp(ResponseCategoriCtrl, ResponseCategoriExp, TIC, TI
 
     % Save figure to disk
     set(gcf, 'Renderer', 'painters');
-    saveas(gcf, fullfile(resdir, 'Theta groups - S12.jpg'));
-    saveas(gcf, fullfile(resdir, 'Theta groups - S12.svg'));
+    saveas(gcf, fullfile(resdir, 'Theta groups - S7.jpg'));
+    saveas(gcf, fullfile(resdir, 'Theta groups - S7.svg'));
 end
 
 function [ratios, thetaCountsPerGroup, thetaProportions] = processThetaGroups(groups, thetaIndex, highTh, lowTh, group_names)

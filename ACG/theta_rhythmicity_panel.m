@@ -197,20 +197,20 @@ function theta_rhythmicity_panel(resdir, cleaned_data, tranf_type)
     % Finalize and save figure
     figure(4);
     set(figure(4), 'Renderer', 'painters');
-    fnm1 = [resdir '\' 'Fig5_Theta rhythmicity panel' tranf_type '.svg'];
+    fnm1 = [resdir '\' 'Fig7_Theta rhythmicity panel' tranf_type '.svg'];
     saveas(figure(4), fnm1)
-    fnm2 = [resdir '\' 'Fig5_Theta rhythmicity panel' tranf_type '.jpg'];
+    fnm2 = [resdir '\' 'Fig7_Theta rhythmicity panel' tranf_type '.jpg'];
     saveas(figure(4), fnm2)
     
-    % S8 - Generate theta rhythmicity supplementary panel for Experimental group
+    % S6A - Generate theta rhythmicity supplementary panel for Experimental group
     theta_supp_panels('Exp', resdir, TIE, normPSTH_exp_cl, time);  % Generate and save supplementary figure for experimental
     close all  % Close figures after generating
     
-    % S9 - Generate theta rhythmicity supplementary panel for Control group
+    % S6B - Generate theta rhythmicity supplementary panel for Control group
     theta_supp_panels('Ctrl', resdir, TIC, normPSTH_ctrl_cl, time);  % Generate and save supplementary figure for control
     close all  % Close all figures to avoid overlap in following steps
     
-    % S10 - Generate supplementary pie charts comparing delay response categories
+    % S7 - Generate supplementary pie charts comparing delay response categories
     RC = cleaned_data.delay_response.ResponseCategoriCtrl;  % Extract response category data for control
     RE = cleaned_data.delay_response.ResponseCategoriExp;   % Extract response category data for experimental
     
