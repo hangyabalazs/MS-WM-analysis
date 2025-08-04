@@ -261,8 +261,8 @@ function [meansGroups, SEGroups, WpGroups, meansGroupsSub, SEGroupsSub, WpGroups
     set(gcf, 'Renderer', 'painters');
     
     % Save figure 
-    saveas(gcf, fullfile(resdir, 'Stat panel S6.jpg'));
-    saveas(gcf, fullfile(resdir, 'Stat panel S6.svg'));
+    saveas(gcf, fullfile(resdir, 'Stat panel S4.jpg'));
+    saveas(gcf, fullfile(resdir, 'Stat panel S4.svg'));
 
 end
 
