@@ -1,52 +1,53 @@
 function theta_rhythmicity_panel(resdir, cleaned_data, tranf_type)
 %THETA_RHYTHMICITY_PANEL   Creates the panels with theta rhythmicity data.
-%   This function generates Figure 5, showing the theta rhythmicity analysis
-%   of experimental and control groups, including raster plots, PSTHs,
-%   heatmaps, average response plots, pie charts, and statistical summaries.
+%   THETA_RHYTHMICITY_PANEL(RESDIR, CLEANED_DATA, TRANF_TYPE) generates Figure 5,
+%   showing the theta rhythmicity analysis of experimental and control groups,
+%   including raster plots, PSTHs, heatmaps, average response plots, pie charts,
+%   and statistical summaries.
 %
 %   Input parameters:
-%       resdir      - Path to the directory for saving the figures and output.
+%       resdir       - Path to the directory for saving the figures and output.
 %       cleaned_data - Struct containing cleaned cell data and associated metrics.
 %       tranf_type   - Type of transformation applied to FR ('submean' or other).
 %
 %   Output:
 %       Saves figures (in .svg and .jpg) and statistical results (in Excel).
 %
-%   See also ACGMOD, CHISQUARETEST, THETA_SUPP_PANELS,
-%   THETA_PIECHARTS_SUPP.
-%
+%   See also ACGMOD, CHISQUARETEST, THETA_EXAMPLE_PANELS, THETA_PIECHARTS_SUPP.
+
 %  Malek Aouadi, Laboratory of Systems Neuroscience
 %  Institute of Experimental Medicine, Budapest, Hungary
 %  2025
+
     close all  % Close any open figures to start fresh
 
     % Extract relevant data from the cleaned_data structure
-    cellidsC = cleaned_data.cellids.cellids_ctrl_cl;
-    cellidsE = cleaned_data.cellids.cellids_exp_cl;
-    normPSTH_exp = cleaned_data.spsth_data.normPSTH_exp;
-    normPSTH_ctrl = cleaned_data.spsth_data.normPSTH_ctrl;
-    normPSTH_exp_cl = cleaned_data.spsth_data.normPSTH_exp_cl;
-    normPSTH_ctrl_cl = cleaned_data.spsth_data.normPSTH_ctrl_cl;
-    spsthExp_raw = cleaned_data.spsth_data.spsthExp_raw;
-    spsthCtrl_raw = cleaned_data.spsth_data.spsthCtrl_raw;
-    time = cleaned_data.time;
+    cellids_ctrl = cleaned_data.cellids.cellids_ctrl_cl; % Cell IDs for control neurons
+    cellids_exp = cleaned_data.cellids.cellids_exp_cl; % Cell IDs for WM neurons
+    normPSTH_exp = cleaned_data.spsth_data.normPSTH_exp; % Raw normalized PSTH matrix for WM neurons
+    normPSTH_ctrl = cleaned_data.spsth_data.normPSTH_ctrl; % Raw normalized PSTH matrix for control neurons
+    normPSTH_exp_cl = cleaned_data.spsth_data.normPSTH_exp_cl; % Cleaned normalized PSTH matrix for WM neurons
+    normPSTH_ctrl_cl = cleaned_data.spsth_data.normPSTH_ctrl_cl; % Cleaned normalized PSTH matrix for control neurons
+    spsthExp_raw = cleaned_data.spsth_data.spsthExp_raw; % Raw PSTH matrix for WM neurons
+    spsthCtrl_raw = cleaned_data.spsth_data.spsthCtrl_raw; % Raw PSTH matrix for control neurons
+    time = cleaned_data.time; % Time vector
     
     % Remove NaN rows from normPSTH and keep corresponding spsth
     spsthExp = spsthExp_raw(sum(isnan(normPSTH_exp),2) == 0, :);
     spsthCtrl = spsthCtrl_raw(sum(isnan(normPSTH_ctrl),2) == 0, :);
     
     % Load Theta Index data
-    TIC = cleaned_data.ThetaIndex.ThetaIndexCtrl;
-    TIE = cleaned_data.ThetaIndex.ThetaIndexExp;
+    theta_index_ctrl = cleaned_data.ThetaIndex.ThetaIndexCtrl;
+    theta_index_exp = cleaned_data.ThetaIndex.ThetaIndexExp;
     
     % Choose cellbase (ensure cellbase environment is set)
     choosecb('MS_WM_EXP_cellbase');
-    
+
     % Define color scheme
     colors3 = {"#EBDB34", "#3495EB", "#A07BE0"};
-    
-    % Define example cell ids for example ACGs
-    example_cells = {'NWM15_200312a_5.2', 'NWM5_190224a_3.1', 'NWM15_200226a_5.3'};
+
+    % Define example cell ids for example ACGs    
+    example_cells = {'NWM15_200312a_5.2', 'NWM15_200311b_5.2', 'NWM15_200226a_5.3'};
     
     % Define temporal parameters for delay and halves
     delay_start = 0.2; 
@@ -59,31 +60,35 @@ function theta_rhythmicity_panel(resdir, cleaned_data, tranf_type)
     secondhalf_inx = find(time >= firsthalf_end & time <= delay_end);
     
     % Define thresholds and labels for rhythmicity grouping
-    highThreshold = 0.5;
-    lowThreshold = 0.1;
+    high_threshold = 0.5;
+    mod_threshold = 0.2;
     labels = {'Strongly theta-rhythmic cells', 'Moderately theta-rhythmic cells', 'Non-theta-rhythmic cells'};
     
     % Load speaker image used for plots
     speaker_image = imread([resdir '\Speaker_picture.png']);
     
     % Group control and experimental cells by theta index
-    [highThetaIndicesC, countsC, sorted_psthsC, psthsCtrl, groupboundariesCtrl, t, avgCT, SEC, cC] = ...
-        group_cells(TIC, highThreshold, lowThreshold, normPSTH_ctrl_cl, time, [delay_start, delay_end], cellidsC);
-    [highThetaIndicesE, countsE, sorted_psthsE, psthsExp, groupboundariesExp, t, avgET, SEE, cE] = ...
-        group_cells(TIE, highThreshold, lowThreshold, normPSTH_exp_cl, time, [delay_start, delay_end], cellidsE);
-    
-    ThetaInx = zeros(1,3);
-    acg_tpos = {200, 40, 34};  % Positioning for theta index text
+    [strongthetacells_ctrl, ~ , ~, counts_ctrl, ~, psths_ctrl, groupboundaries_ctrl,...
+        ~, avg_ctrl, se_ctrl, ~] = group_cells(theta_index_ctrl, high_threshold, mod_threshold,...
+        normPSTH_ctrl_cl, time, [delay_start, delay_end], cellids_ctrl);
+    [strongthetacells_exp, ~, ~, counts_exp, ~, psths_exp, groupboundaries_exp,...
+        time_c, avg_exp, se_exp, ~] = group_cells(theta_index_exp, high_threshold, mod_threshold,...
+        normPSTH_exp_cl, time, [delay_start, delay_end], cellids_exp);
+
+
+    theta_inx_examples = zeros(1,3);
+    acg_tpos = {200, 200, 34};  % Positioning for theta index text
     
     % Top panel: autocorrelograms and theta index annotation
     for iC = 1:3
-        [~, ~, ThetaInx(1,iC)] = acgmod(example_cells{iC}, 0.8, 'isvisual', true, 'dt', 0.001);  % ACG & compute theta index
+        [~, ~, theta_inx_examples(1,iC)] = acgmod(example_cells{iC}, 0.8, 'isvisual', true, 'dt', 0.001);  % ACG & compute theta index
+         % xlim([-20,20]);
         x_lim = xlim;
         y_lim = ylim;
         ylabel('Count');
         hold on;
         % Display theta index value on the plot
-        text(x_lim(2)-1500, y_lim(2)-acg_tpos{iC}, mat2str(round(ThetaInx(iC),3)), 'Color', 'black', 'FontSize', 8);
+        text(x_lim(2)-1500, y_lim(2)-acg_tpos{iC}, mat2str(round(theta_inx_examples(iC),3)), 'Color', 'black', 'FontSize', 8);
         set(gca, 'TickDir', 'out', 'Box', 'off');
         hold off;
     end
@@ -92,48 +97,67 @@ function theta_rhythmicity_panel(resdir, cleaned_data, tranf_type)
     figure('Units', 'centimeters', 'Position', [0, 0, 16, 20]);
     
     % Copy autocorrelogram subplots into main figure (top row)
-    for i = 1:3
-        figure(i)
+    for iF = 1:3
+        figure(iF)
         h = get(gcf, 'Children');
         newh = copyobj(h(1), 4);
-        set(newh, 'Position', [0.05 + (i-1)*0.33, 0.8, 0.28, 0.165]);
+        set(newh, 'Position', [0.05 + (iF-1)*0.33, 0.8, 0.28, 0.165]);
     end
     
     % Experimental heatmap
     figure(4)
     subplot('Position', [0.07, 0.55, 0.3, 0.2]);
-    plot_heatmap(t, psthsExp, groupboundariesExp, 30, speaker_image, 0.12, 0.735);
+    plot_heatmap(time_c, psths_exp, groupboundaries_exp, 30, speaker_image, 0.12, 0.735);
     
     % Experimental average PSTH
     subplot('Position', [0.43, 0.55, 0.2, 0.2]);
-    plot_avg(t, avgET, SEE, colors3, speaker_image, 0.482, 0.735);
+    plot_avg(time_c, avg_exp, se_exp, colors3, speaker_image, 0.482, 0.735);
     
     % Experimental group distribution (pie chart)
     subplot('Position', [0.745, 0.52, 0.22, 0.22]);
-    plot_piechart(countsE, 'Exp', colors3, labels);
+    plot_piechart(counts_exp, 'Exp', colors3, labels);
     
     % Control heatmap
     subplot('Position', [0.07, 0.28, 0.3, 0.2]);
-    plot_heatmap(t, psthsCtrl, groupboundariesCtrl, 30, speaker_image, 0.12, 0.465);
+    plot_heatmap(time_c, psths_ctrl, groupboundaries_ctrl, 30, speaker_image, 0.12, 0.465);
     
     % Control average PSTH
     subplot('Position', [0.43, 0.28, 0.2, 0.2]);
-    plot_avg(t, avgCT, SEC, colors3, speaker_image, 0.482, 0.465);
+    plot_avg(time_c, avg_ctrl, se_ctrl, colors3, speaker_image, 0.482, 0.465);
     
     % Control group distribution (pie chart)
     subplot('Position', [0.745, 0.2, 0.22, 0.22]);
-    plot_piechart(countsC, 'Control', colors3, labels);
+    plot_piechart(counts_ctrl, 'Control', colors3, labels);
     
     % Statistical test: Chi-square on group distributions
-    [chi_stat, p_value, df] = chiSquareTest([countsE; countsC], 0.001);
+    [chi_stat, p_value, df] = chiSquareTest([counts_exp; counts_ctrl], 0.001);
     res = [chi_stat, p_value, df];
     
-    % Bar plots and statistics on firing rate
-    [M1, S1, M2, S2, Wp12, M3, S3, M4, S4, Wp34, M5, S5, M6, S6, Wp56] = ...
-        plot_bars(tranf_type, normPSTH_exp_cl, highThetaIndicesE, delay_inx, ...
-        normPSTH_ctrl_cl, highThetaIndicesC, spsthExp, spsthCtrl, ...
-        firsthalf_inx, secondhalf_inx);
+    % Bar plots and statistics on firing rate for strongly theta rhythmic
+    % cells during full delay and 1st and 2nd half of delay
+    [mean_exp_delay, se_exp_delay, mean_ctrl_delay, se_ctrl_delay, p_delay,...
+        mean_exp_1sthalf, se_exp_1sthalf, mean_ctrl_1sthalf, se_ctrl_1sthalf,...
+        p_1sthalf, mean_exp_2ndhalf, se_exp_2ndhalf, mean_ctrl_2ndhalf,...
+        se_ctrl_2ndhalf, p_2ndhalf] = plot_bars(tranf_type, normPSTH_exp_cl,...
+        strongthetacells_exp, delay_inx, normPSTH_ctrl_cl, strongthetacells_ctrl,...
+        spsthExp, spsthCtrl, firsthalf_inx, secondhalf_inx);
     
+    % Copy bottom bar plots into figure
+    for iF = 5:7
+        figure(iF)
+        h = get(gcf, 'Children');
+        newh = copyobj(h(2), 4);
+        set(newh, 'Position', [0.06 + (iF-5)*0.33, 0.03, 0.28, 0.165]);
+    end
+    
+    % Finalize and save figure
+    figure(4);
+    set(figure(4), 'Renderer', 'painters');
+    fig_nm1 = [resdir '\' 'Fig7_Theta rhythmicity panel' tranf_type '.svg'];
+    saveas(figure(4), fig_nm1)
+    fig_nm2 = [resdir '\' 'Fig7_Theta rhythmicity panel' tranf_type '.jpg'];
+    saveas(figure(4), fig_nm2)
+
     % Compile and format statistical results
     if strcmp(tranf_type, 'submean')
         emptyC = cell(11,3);
@@ -144,19 +168,19 @@ function theta_rhythmicity_panel(resdir, cleaned_data, tranf_type)
             {'Theta groups', '', ''};
             string(labels);
             {'Exp', '', ''};
-            countsE;
+            counts_exp;
             {'Ctrl', '', ''};
-            countsC;
+            counts_ctrl;
             emptyC;
-            {'Subtracted mean FR - SE - p', 'Stronlgy theta-rythmic cells', 'Stats for delay'};
-            {M1, S1, ''};
-            {M2, S2, Wp12};
-            {'Subtracted mean FR - SE - p', 'Stronlgy theta-rythmic cells', 'Stats for 1st half delay'};
-            {M3, S3, ''};
-            {M4, S4, Wp34};
-            {'Subtracted mean FR - SE - p', 'Stronlgy theta-rythmic cells', 'Stats for 2nd half delay'};
-            {M5, S5, ''};
-            {M6, S6, Wp56}
+            {'Subtracted mean FR - SE - p', 'Strongly theta-rythmic cells', 'Stats for delay'};
+            {mean_exp_delay, se_exp_delay, 'Exp'};
+            {mean_ctrl_delay, se_ctrl_delay, p_delay};
+            {'Subtracted mean FR - SE - p', 'Strongly theta-rythmic cells', 'Stats for 1st half delay'};
+            {mean_exp_1sthalf, se_exp_1sthalf, 'Exp'};
+            {mean_ctrl_1sthalf, se_ctrl_1sthalf, p_1sthalf};
+            {'Subtracted mean FR - SE - p', 'Strongly theta-rythmic cells', 'Stats for 2nd half delay'};
+            {mean_exp_2ndhalf, se_exp_2ndhalf, 'Exp'};
+            {mean_ctrl_2ndhalf, se_ctrl_2ndhalf, p_2ndhalf}
         ];
     else
         results = [
@@ -165,19 +189,19 @@ function theta_rhythmicity_panel(resdir, cleaned_data, tranf_type)
             {'Theta groups', '', ''};
             string(labels);
             {'Exp', '', ''};
-            countsE;
+            counts_exp;
             {'Ctrl', '', ''};
-            countsC;
+            counts_ctrl;
             {'', '', ''};
             {'Absolute mean FR - SE - p', 'Stronlgy theta-rythmic cells', 'Stats for delay'};
-            {M1, S1, ''};
-            {M2, S2, Wp12};
+            {mean_exp_delay, se_exp_delay, 'Exp'};
+            {mean_ctrl_delay, se_ctrl_delay, p_delay};
             {'Absolute mean FR - SE - p', 'Stronlgy theta-rythmic cells', 'Stats for 1st half delay'};
-            {M3, S3, ''};
-            {M4, S4, Wp34};
+            {mean_exp_1sthalf, se_exp_1sthalf, 'Exp'};
+            {mean_ctrl_1sthalf, se_ctrl_1sthalf, p_1sthalf};
             {'Absolute mean FR - SE - p', 'Stronlgy theta-rythmic cells', 'Stats for 2nd half delay'};
-            {M5, S5, ''};
-            {M6, S6, Wp56};
+            {mean_exp_2ndhalf, se_exp_2ndhalf, 'Exp'};
+            {mean_ctrl_2ndhalf, se_ctrl_2ndhalf, p_2ndhalf};
             {'', '', ''};
         ];
     end
@@ -186,40 +210,24 @@ function theta_rhythmicity_panel(resdir, cleaned_data, tranf_type)
     filename = fullfile(resdir, 'StatResults.xlsx');
     writematrix(results, filename, 'Sheet', 4);
     
-    % Copy bottom bar plots into figure
-    for i = 5:7
-        figure(i)
-        h = get(gcf, 'Children');
-        newh = copyobj(h(2), 4);
-        set(newh, 'Position', [0.06 + (i-5)*0.33, 0.03, 0.28, 0.165]);
-    end
-    
-    % Finalize and save figure
-    figure(4);
-    set(figure(4), 'Renderer', 'painters');
-    fnm1 = [resdir '\' 'Fig7_Theta rhythmicity panel' tranf_type '.svg'];
-    saveas(figure(4), fnm1)
-    fnm2 = [resdir '\' 'Fig7_Theta rhythmicity panel' tranf_type '.jpg'];
-    saveas(figure(4), fnm2)
-    
-    % S6A - Generate theta rhythmicity supplementary panel for Experimental group
-    theta_supp_panels('Exp', resdir, TIE, normPSTH_exp_cl, time);  % Generate and save supplementary figure for experimental
+    % S8C - Generate theta rhythmicity supplementary panel for Experimental group
+    theta_example_panels('Exp', resdir, theta_index_exp, normPSTH_exp_cl, time);  % Generate and save supplementary figure for experimental
     close all  % Close figures after generating
-    
-    % S6B - Generate theta rhythmicity supplementary panel for Control group
-    theta_supp_panels('Ctrl', resdir, TIC, normPSTH_ctrl_cl, time);  % Generate and save supplementary figure for control
+
+    % S8D - Generate theta rhythmicity supplementary panel for Control group
+    theta_example_panels('Ctrl', resdir, theta_index_ctrl, normPSTH_ctrl_cl, time);  % Generate and save supplementary figure for control
     close all  % Close all figures to avoid overlap in following steps
+
+    % S8A, S9 - Generate supplementary pie charts comparing delay response categories
+    resp_categ_ctrl = cleaned_data.delay_response.ResponseCategoriCtrl;  % Extract response category data for control
+    resp_categ_exp = cleaned_data.delay_response.ResponseCategoriExp;   % Extract response category data for experimental
     
-    % S7 - Generate supplementary pie charts comparing delay response categories
-    RC = cleaned_data.delay_response.ResponseCategoriCtrl;  % Extract response category data for control
-    RE = cleaned_data.delay_response.ResponseCategoriExp;   % Extract response category data for experimental
-    
-    theta_piecharts_supp(RC, RE, TIC, TIE, resdir);  % Generate and save supplementary pie charts comparing groups
+    theta_piecharts_supp(resp_categ_ctrl, resp_categ_exp, theta_index_ctrl, theta_index_exp, normPSTH_ctrl_cl, normPSTH_exp_cl, time, resdir);  % Generate and save supplementary pie charts comparing groups
 
 end 
 
-
-function [highThetaIndices, counts, sorted_psths, psths, groupboundaries, time_cut, averages, SE, c]...
+%-------------------------------------------------------------------------
+function [highThetaIndices, middleThetaIndices, lowThetaIndices, counts, sorted_psths, psths, groupboundaries, time_cut, averages, SE, c]...
     = group_cells(TI, highThreshold, lowThreshold, normPSTH, time, delay, cellids)
 % Groups cells based on theta index and prepares PSTHs and statistics for each group.
 
