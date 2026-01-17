@@ -13,7 +13,7 @@ function Behaviour_panel_supp(xlsdir, resdir)
 %   set of figures for behavioral data.
 %
 %   See also BEHAVIOUR_PANEL
-%
+
 %  Malek Aouadi, Laboratory of Systems Neuroscience
 %  Institute of Experimental Medicine, Budapest, Hungary
 %  2025
@@ -404,6 +404,7 @@ function h = before_vs_after_ksdensity(values_struct, line_colour, str, txt)
     hold off;
 end
 
+% -------------------------------------------------------------------------
 function h = before_vs_after_bar(bar_colour, str, MainBefore, SideBefore, MainAfter, SideAfter, SideBefore2, SideAfter2, txt)
 % Plots bar graphs with error bars to compare performance before/after surgery
 

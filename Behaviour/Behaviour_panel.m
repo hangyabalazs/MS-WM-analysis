@@ -18,7 +18,7 @@ function Behaviour_panel(xlsdir, resdir)
 %       Behaviour_panel('C:\Data\Behavior', 'C:\Results\Figures')
 %
 %   See also BEHAVIOUR_PANEL_SUPP
-% 
+
 %  Malek Aouadi, Laboratory of Systems Neuroscience
 %  Institute of Experimental Medicine, Budapest, Hungary
 %  2025
@@ -172,8 +172,6 @@ ba1(3).FaceColor = [0.6 0.6 0.6]; % Abort
 ba1(4).FaceColor = [0.9 0.9 0]; % Timed Out
 
 hold on;
-ax=gca;
-
 % Normalize surgery marker position
 surgery_time = size(correct_trials,2) + 0.5;
 x_limits = xlim;

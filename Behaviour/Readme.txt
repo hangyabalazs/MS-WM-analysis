@@ -8,8 +8,6 @@ It includes:
 
 Behaviour_panel_supp.m - produces supplementary figures (e.g., S1–2) for exp & ctrl mice that expand on the main behavioral analysis, uses same excel data file. 
 It includes:
-- Line plots of correct vs incorrect trials over training
-- Stacked bar charts showing session performance
 - Statistical comparisons before and after surgery
 - Fixation duration trends for control animals
 
