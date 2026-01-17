@@ -17,7 +17,7 @@
 %            'Punishment', 'Overall', 'First', 'Second'
 %   Example:
 %       cdf_fig(data1, data2, 50, 'Group A', 'Group B', 'Delay');
-%
+
 %  Malek Aouadi, Laboratory of Systems Neuroscience
 %  Institute of Experimental Medicine, Budapest, Hungary
 %  2025
@@ -48,6 +48,7 @@
     lgd.Box='off';
     xlabel(xl);
     
+    % Set plot title based on case
     if  strcmp('Min FR',xl)==1
         title({'CDF of'; 'Minimum FR (delay)'});
     elseif  strcmp('Max FR',xl)==1
@@ -70,6 +71,7 @@
         title({'CDF of'; '2nd Half - Delay'});
     end
     
+    % Formatting
     ax=gca;
     ax.TickDir = 'out';
     ax.Box='off';

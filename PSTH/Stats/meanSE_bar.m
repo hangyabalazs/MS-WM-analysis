@@ -1,23 +1,48 @@
-function [H, Wp, means, SEs] = meanSE_bar(data, labels, alpha, str, t, c)
-% MEANSE_BARSTAT   Mean bar plot with statistics for multiple groups.
+function [H, Wp, means, SEs] = meanSE_bar(data, labels, alpha, stat_type, bar_title, edge_color)
+%MEANSE_BAR  Bar plot of group means with standard errors and pairwise nonparametric tests
+%   [H, Wp, means, SEs] = MEANSE_BAR(DATA, LABELS) creates a bar plot displaying the mean and
+%   standard error for each group in DATA, labeled using LABELS. Pairwise nonparametric
+%   statistical tests are performed and significant comparisons are annotated on the plot.
 %
-%   [H, WP] = MEANSE_BARSTAT3(DATA, LABELS, ALPHA, STR, T, C) plots mean bar plot (H, figure handle)
-%   of data sets for multiple groups using labels. It performs pairwise
-%   non-parametric tests (Mann-Whitney U-test or Wilcoxon signed rank test)
-%   with significance level ALPHA (default is 0.01) and returns p values (WP).
+%   [___] = MEANSE_BAR(DATA, LABELS, ALPHA) specifies the significance level for hypothesis
+%   testing (default: 0.01).
 %
-%   DATA: Cell array or matrix with data for each group.
-%   LABELS: Cell array with group labels.
-%   ALPHA: Significance level (default is 0.01).
-%   STR: 'nonpaired' for Mann-Whitney U-test, 'paired' for Wilcoxon signed rank test.
-%   T: Title of the plot.
-%   C: Cell array of colors for each group.
+%   [___] = MEANSE_BAR(___, STAT_TYPE) specifies the type of test:
+%       'nonpaired' — Mann-Whitney U test (default, for independent samples)
+%       'paired'    — Wilcoxon signed-rank test (for matched or repeated measures)
+%
+%   [___] = MEANSE_BAR(___, BAR_TITLE) sets the title of the figure.
+%
+%   [___] = MEANSE_BAR(___, EDGE_COLOR) specifies the edge color for each bar as a cell array
+%   of color specifications (e.g., {'r', 'b'}); defaults to black if omitted.
+%
+%   Inputs:
+%     DATA          — Group data, specified as either:
+%                     An N-by-G numeric matrix (N observations, G groups), or
+%                     A 1-by-G cell array where each cell contains a numeric vector of
+%                       observations for one group.
+%     LABELS        — Group labels, specified as a 1-by-G cell array of character vectors or
+%                     strings.
+%     ALPHA         — Significance level (scalar in (0,1); default: 0.01).
+%     STAT_TYPE     — Test type ('nonpaired' or 'paired'; default: 'nonpaired').
+%     BAR_TITLE     — Plot title (character vector, string, or empty; default: '').
+%     EDGE_COLOR    — Bar edge colors, specified as a 1-by-G cell array of color specs
+%                     (e.g., {'k', [0.2 0.4 0.8]}); default: {'k', 'k', ..., 'k'}.
+%
+%   Outputs:
+%     H             — Figure handle.
+%     Wp            — Matrix of pairwise p-values.
+%     means         — Vector of group means.
+%     SEs           — Vector of standard errors.
 %
 %   Example:
-%       data = {randn(20, 1), randn(20, 1)};
-%       labels = {'Group A', 'Group B'};
-%       [H, Wp] = meanSE_barstat3(data, labels, 0.05, 'nonpaired', 'Comparison of Groups', {'r', 'b'});
+%       data = {randn(20,1), randn(20,1) + 0.8};
+%       labels = {'Control', 'Experimental'};
+%       [H, Wp, means, SEs] = meanSE_bar(data, labels, 0.05, 'nonpaired', ...
+%           'FR comparison', {'k', 'k'});
 %
+%   See also SIGNRANK, RANKSUM.
+
 %  Malek Aouadi, Laboratory of Systems Neuroscience
 %  Institute of Experimental Medicine, Budapest, Hungary
 %  2025
@@ -25,10 +50,12 @@ function [H, Wp, means, SEs] = meanSE_bar(data, labels, alpha, str, t, c)
 % Input argument check
 narginchk(2, 6);
 if nargin < 4
-    str = 'nonpaired';
+    stat_type = 'nonpaired';
 end
 if nargin < 3 || isempty(alpha)
     alpha = 0.01;   % default significance level
+    edge_color = {'k', 'k', 'k', 'k', 'k', 'k', 'k', 'k'};
+    bar_title = '';
 end
 
 % Calculate means and SEs
@@ -53,18 +80,18 @@ for i = 1:numGroups
     % Calculate position for each bar, alternating between no space for pairs and spacing between them
     groupIndex = ceil(i / 2);  % Group index (1, 2, 3, ...)
     position = (groupIndex - 1) * (2 + spacing) + (mod(i, 2) == 0); % Adjust positions for pairs
-    bar(position, means(i), 'FaceColor', 'none', 'EdgeColor', c{i}, 'LineWidth', 1);
+    bar(position, means(i), 'FaceColor', 'none', 'EdgeColor', edge_color{i}, 'LineWidth', 1);
     errorbar(position, means(i), SEs(i), 'k', 'LineStyle', 'none', 'CapSize', 0);
     barPositions(i) = position; % Store the x-position for the bar
 end
-title(t); % Plot title
+title(bar_title); % Plot title
 
 % Perform pairwise statistical tests
 Wp = zeros(numGroups);
 Wh = false(numGroups);
 for i = 1:numGroups
     for j = i+1:numGroups
-        switch str
+        switch stat_type
             case 'nonpaired'
                 [Wp(i, j), Wh(i, j)] = ranksum(data{i}, data{j}, 'alpha', alpha);
             case 'paired'

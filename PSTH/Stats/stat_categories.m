@@ -23,7 +23,7 @@ function [meansGroups, SEGroups, WpGroups, meansGroupsSub, SEGroupsSub, WpGroups
 %       [means, SE, stats, meansSub, SESub, statsSub] = stat_categories(dataStruct, 'results/');
 %
 %   See also MEANBARGROUPS, SPSTH_PARTS.
-%
+
 %  Malek Aouadi, Laboratory of Systems Neuroscience
 %  Institute of Experimental Medicine, Budapest, Hungary
 %  2025
@@ -50,9 +50,15 @@ function [meansGroups, SEGroups, WpGroups, meansGroupsSub, SEGroupsSub, WpGroups
     % Response categories for experimental and control groups
     ME = categorical(cleaned_data.delay_response.ResponseCategoriExp);
     MC = categorical(cleaned_data.delay_response.ResponseCategoriCtrl);
+
+    % Merge 'Inh-Act' -> 'Inh', 'Act-Inh' -> 'Act'
+    MC = mergecats(MC, {'Inh', 'Inh-Act'}, 'Inh');
+    MC = mergecats(MC, {'Act', 'Act-Inh'}, 'Act');
+    ME = mergecats(ME, {'Inh', 'Inh-Act'}, 'Inh');
+    ME = mergecats(ME, {'Act', 'Act-Inh'}, 'Act');
     
     % Define group names
-    group_names = {'Inh', 'Act', 'Inh-Act', 'Act-Inh', 'NonResp'};
+    group_names = {'Inh', 'Act', 'NonResp'};
     
     % Create time vector and delay indices for analysis windows
     time_vector = g.window(1):g.dt:g.window(2);
@@ -91,7 +97,7 @@ function [meansGroups, SEGroups, WpGroups, meansGroupsSub, SEGroupsSub, WpGroups
         'Punishment', mn_punishExp, mn_punishCtrl;
     };
     
-    group_data = cell(6, 10); % Preallocate container for grouped data
+    group_data = cell(6, 6); % Preallocate container for grouped data
     
     % Organize data by category and condition for both groups
     for iC = 1:6
@@ -113,7 +119,7 @@ function [meansGroups, SEGroups, WpGroups, meansGroupsSub, SEGroupsSub, WpGroups
     end
     
     % Define group names
-    groupAll = {'Inh Exp','Inh Ctrl','Act Exp','Act Ctrl','Inh-Act Exp','Inh-Act Ctrl','Act-Inh Exp','Act-Inh Ctrl','NonResp Exp','NonResp Ctrl'};
+    groupAll = {'Inh Exp','Inh Ctrl','Act Exp','Act Ctrl','NonResp Exp','NonResp Ctrl'};
     
     meansGroups = cell(6,1);
     SEGroups = cell(6,1);
@@ -137,7 +143,7 @@ function [meansGroups, SEGroups, WpGroups, meansGroupsSub, SEGroupsSub, WpGroups
         'Punishment', mn_punishExp - baselineExp, mn_punishCtrl - baselineCtrl;
     };
     
-    group_dataSub = cell(4, 10);
+    group_dataSub = cell(4, 6);
     
     % Organize baseline-subtracted data by category and condition
     for iC = 1:4
@@ -208,14 +214,14 @@ function [meansGroups, SEGroups, WpGroups, meansGroupsSub, SEGroupsSub, WpGroups
     end
     
     % Subtract baseline mean from psth
-    ExpRewGroups = subtract_meanbaseline(spsthExpRew, 5,  ME, group_names, time_vector); % WM/Rewarded trials
-    ExpPunGroups = subtract_meanbaseline(spsthExpPun, 5,  ME, group_names, time_vector); % WM/Punished trials
-    CtrlRewGroups = subtract_meanbaseline(spsthCtrlRew, 5, MC, group_names, time_vector); % Ctrl/Rewarded trials
-    CtrlPunGroups = subtract_meanbaseline(spsthCtrlPun, 5, MC, group_names, time_vector); % Ctrl/Punished trials
+    ExpRewGroups = subtract_meanbaseline(spsthExpRew, 3,  ME, group_names, time_vector); % WM/Rewarded trials
+    ExpPunGroups = subtract_meanbaseline(spsthExpPun, 3,  ME, group_names, time_vector); % WM/Punished trials
+    CtrlRewGroups = subtract_meanbaseline(spsthCtrlRew, 3, MC, group_names, time_vector); % Ctrl/Rewarded trials
+    CtrlPunGroups = subtract_meanbaseline(spsthCtrlPun, 3, MC, group_names, time_vector); % Ctrl/Punished trials
     
     % Organize psth data for Exp & Ctrl into one cell array 
-    Exp_allgroups = organize_data(5, ExpRewGroups, ExpPunGroups, time_vector);
-    Ctrl_allgroups = organize_data(5, CtrlRewGroups, CtrlPunGroups, time_vector);
+    Exp_allgroups = organize_data(3, ExpRewGroups, ExpPunGroups, time_vector);
+    Ctrl_allgroups = organize_data(3, CtrlRewGroups, CtrlPunGroups, time_vector);
     
     % Compare Correct vs Incorrect
     [axes_handles{11}, ~, Wp1, means1, SEs1] = meanbargroups(Exp_allgroups, groupAll, alpha, 'DR-2AFC WM - Delay', 1); % WM 
@@ -266,6 +272,7 @@ function [meansGroups, SEGroups, WpGroups, meansGroupsSub, SEGroupsSub, WpGroups
 
 end
 
+% -------------------------------------------------------------------------
 function run_psth_byoutcome(datapath)
 % Run psth analysis partitioned by outcome
 

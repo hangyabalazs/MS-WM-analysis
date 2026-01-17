@@ -24,7 +24,7 @@ function stat_panel_fig3(resdir, cleaned_data, varargin)
 %       stat_panel_fig3('results/', cleaned_data, 'window', [-1 6], 'display', false);
 %
 % See also SPSTH_PARTS.
-%
+
 %  Malek Aouadi, Laboratory of Systems Neuroscience
 %  Institute of Experimental Medicine, Budapest, Hungary
 %  2025
@@ -112,7 +112,57 @@ function stat_panel_fig3(resdir, cleaned_data, varargin)
     % Get valid cell IDs (already aligned with spsthExp and spsthCtrl)
     cellids_exp_valid = cleaned_data.cellids.cellids_exp_cl;
     cellids_ctrl_valid = cleaned_data.cellids.cellids_ctrl_cl;
+    % === ADD: PDF Plots of Firing Rate Distributions Across Conditions ===
+% Create a new figure for PDF plots
+fig_pdf = figure('Name', 'Firing Rate Distributions - PDF', 'NumberTitle', 'off');
+t_pdf = tiledlayout(1, size(conditions, 1), 'Padding', 'compact', 'TileSpacing', 'compact');
+
+% Loop over each condition
+for condIdx = 1:size(conditions, 1)
+    % Get condition name and data
+    condName = conditions{condIdx, 1};
+    expData = conditions{condIdx, 2};  % Experimental group
+    ctrlData = conditions{condIdx, 3}; % Control group
     
+    % Create subplot
+    ax = nexttile(t_pdf);
+    
+    % Plot PDFs using ksdensity
+    [f_exp, xi_exp] = ksdensity(expData);
+    [f_ctrl, xi_ctrl] = ksdensity(ctrlData);
+    
+    % Plot both distributions
+    plot(ax, xi_exp, f_exp, 'Color', 'b', 'LineWidth', 1.5, 'DisplayName', WM_label);
+    hold on;
+    plot(ax, xi_ctrl, f_ctrl, 'Color', 'r', 'LineWidth', 1.5, 'DisplayName', Ctrl_label);
+    hold off;
+    
+    % Customize
+    xlabel(ax, 'Mean Firing Rate (Hz)');
+    ylabel(ax, 'Density');
+    title(ax, condName);
+    legend(ax, 'Location', 'best','Box','off');
+    
+    % Set axis limits for consistency
+    xlim(ax, [0, max([xi_exp, xi_ctrl])]);
+    ylim(ax, [0, max([f_exp, f_ctrl]) * 1.1]);
+    box off;
+    set(gca, 'TickDir', 'out');
+end
+
+
+% Save PDF figure
+pdf_filename = fullfile(resdir, 'FR_Distributions_PDF.svg');
+saveas(fig_pdf, pdf_filename);
+
+if g.display
+    drawnow;
+end
+
+% Close the figure if not displaying
+if ~g.display
+    close(fig_pdf);
+end
     % Initialize table to store per-mouse baseline FR
     MouseTable = table([], [], [], [], [], ...
         'VariableNames',{'MouseID','Group','Condition','MeanFR','SE_FR'},'RowNames', {});
@@ -305,6 +355,7 @@ function stat_panel_fig3(resdir, cleaned_data, varargin)
 
 end
 
+% -------------------------------------------------------------------------
 function [mn_rew, mn_punish] = process_feedback_data(feedback_meanFR, normPSTH, type)
     % Filters feedback FR data based on valid rows in normPSTH, and returns
     % mean FRs for reward and punishment events

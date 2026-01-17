@@ -25,7 +25,7 @@ function [ax, lgd, Wp, means, SEs] = meanbargroups(data, l, alpha, txt, parts)
 %       meanbargroups(data, labels, title_str, 0);
 %
 %   See also: MEANSE_BAR
-%
+
 %  Malek Aouadi, Laboratory of Systems Neuroscience
 %  Institute of Experimental Medicine, Budapest, Hungary
 %  2025

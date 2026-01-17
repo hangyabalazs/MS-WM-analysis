@@ -17,7 +17,7 @@ function stat_panel_fig5_6(cleaned_data, ROC, ROCtime, pvalues, resdir, roc_anal
 %       Saves plots (.fig, .svg) and statistical results (.xlsx) to resdir.
 % 
 % See also : ROC_ANALYSIS, BARMEANSTAT, CDF_FIG, MEANBARGROUPS.
-%
+
 %  Malek Aouadi, Laboratory of Systems Neuroscience
 %  Institute of Experimental Medicine, Budapest, Hungary
 %  2025
@@ -44,11 +44,17 @@ function stat_panel_fig5_6(cleaned_data, ROC, ROCtime, pvalues, resdir, roc_anal
     label1='WM';
     label2='Ctrl';
     %group_names2={'Inh','Act','Inh-Act','Act-Inh', 'Non-resp'};
-    groupAll={'Inh Exp','Inh Ctrl','Act Exp','Act Ctrl','Inh-Act Exp','Inh-Act Ctrl','Act-Inh Exp','Act-Inh Ctrl', 'NonResp Exp','NonResp Ctrl'};
+    groupAll={'Inh Exp','Inh Ctrl','Act Exp','Act Ctrl', 'NonResp Exp','NonResp Ctrl'};
     
     % Convert response categories to categorical arrays
     groupLabelsCtrl = categorical(ResponseCategoriCtrl);
     groupLabelsExp = categorical(ResponseCategoriExp);
+    
+    % Merge 'Inh-Act' -> 'Inh', 'Act-Inh' -> 'Act'
+    groupLabelsCtrl  = mergecats(groupLabelsCtrl , {'Inh', 'Inh-Act'}, 'Inh');
+    groupLabelsCtrl  = mergecats(groupLabelsCtrl , {'Act', 'Act-Inh'}, 'Act');
+    groupLabelsExp  = mergecats(groupLabelsExp , {'Inh', 'Inh-Act'}, 'Inh');
+    groupLabelsExp  = mergecats(groupLabelsExp , {'Act', 'Act-Inh'}, 'Act');
     
     % Process stats data for WM neurons
     [nor_maxExp, nor_minExp, norFR1sthalfExp, norFR2ndhalfExp, nor_max_groupsExp, nor_min_groupsExp, ...
@@ -408,23 +414,18 @@ function stat_panel_fig5_6(cleaned_data, ROC, ROCtime, pvalues, resdir, roc_anal
         end
     end
     
-    % Add final row: ROC plots for additional group comparisons 
-    nexttile([1 4]);
-    plot_roc_log(gca, ROCtime, pvalues, ROC, 3);  % ROC for InhAct groups
-    
-    nexttile([1 4]);
-    plot_roc_log(gca, ROCtime, pvalues, ROC, 4);  % ROC for ActInh groups
+
     
     % Standardize font size across all elements
     set(findall(fig1, '-property', 'FontSize'), 'FontSize', 8);
     
     % Save figure in both JPG and SVG formats 
-    saveas(gcf, [resdir '\'  'Stat panel - S5' roc_analysis_type '.jpg']);
-    saveas(gcf, [resdir '\'  'Stat panel - S5' roc_analysis_type '.svg']);
+    saveas(fig1, [resdir '\'  'Stat panel - S5.jpg']);
+    saveas(fig1, [resdir '\'  'Stat panel - S5.svg']);
 
 end
 
-
+% -------------------------------------------------------------------------
 function [nor_max, nor_min, norFR1sthalf, norFR2ndhalf, nor_max_groups, nor_min_groups, ...
           nor_spsth_groups, max, min, FR1sthalf, FR2ndhalf, min_groups, max_groups] ...
           = process_stats(time, spsth, stats, grouping_matrix)
@@ -440,7 +441,7 @@ firsthalf_inx = find(time >= delay_start & time <= firsthalf_end);
 secondhalf_inx = find(time >= firsthalf_end & time <= delay_end);
 
 % Define group names and number of groups
-group_names = {'Inh', 'Act', 'Inh-Act', 'Act-Inh', 'NonResp'};
+group_names = {'Inh', 'Act', 'NonResp'};
 num_groups = numel(group_names);
 
 % Compute baseline-subtracted PSTH, max and min FR, and raw max/min

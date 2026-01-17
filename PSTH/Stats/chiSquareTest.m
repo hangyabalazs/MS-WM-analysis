@@ -24,7 +24,7 @@ function [chi_square_stat, p_value, df] = chiSquareTest(observed, alpha)
 %   Notes:
 %       - Expected frequencies less than 5 in many cells may invalidate 
 %         the Chi-square approximation.
-%
+
 %  Malek Aouadi, Laboratory of Systems Neuroscience
 %  Institute of Experimental Medicine, Budapest, Hungary
 %  2025

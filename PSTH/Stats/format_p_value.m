@@ -20,6 +20,10 @@ function p_str = format_p_value(p)
 %   format_p_value(0.03)    % Returns '*'
 %   format_p_value(0.1)     % Returns 'ns'
 
+%  Malek Aouadi, Laboratory of Systems Neuroscience
+%  Institute of Experimental Medicine, Budapest, Hungary
+%  2025
+
 threestars=0.001;
 twostars=0.01;
 

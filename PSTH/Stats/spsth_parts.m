@@ -22,7 +22,7 @@ function mean_FR = spsth_parts(datapath)
 %     If results are missing, the user is prompted to run the analysis.
 %
 % See also : ULTIMATE_PSTH_WM, CHOOSECB, LOADCB, SELECTCELL.
-%
+
 %  Malek Aouadi, Laboratory of Systems Neuroscience
 %  Institute of Experimental Medicine, Budapest, Hungary
 %  2025

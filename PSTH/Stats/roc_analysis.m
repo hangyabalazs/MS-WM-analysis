@@ -21,7 +21,7 @@ function roc_analysis(resdir, testwin, cleaned_data, analysis_type)
 %
 %
 % See also: ULTIMATE_PSTH.
-%
+
 %  Malek Aouadi, Laboratory of Systems Neuroscience
 %  Institute of Experimental Medicine, Budapest, Hungary
 %  2025
@@ -41,6 +41,13 @@ function roc_analysis(resdir, testwin, cleaned_data, analysis_type)
     % Clean categories matrices
     MC = categorical(ResponseCategoriCtrl);
     ME = categorical(ResponseCategoriExp);
+    
+    % Merge groups:'Inh-Act' -> 'Inh', 'Act-Inh' -> 'Act'
+    MC = mergecats(MC, {'Inh', 'Inh-Act'}, 'Inh');
+    MC = mergecats(MC, {'Act', 'Act-Inh'}, 'Act');
+    ME = mergecats(ME, {'Inh', 'Inh-Act'}, 'Inh');
+    ME = mergecats(ME, {'Act', 'Act-Inh'}, 'Act');
+    
 
     % Define parameters
     time=linspace(-2,6,8001);
@@ -54,22 +61,22 @@ function roc_analysis(resdir, testwin, cleaned_data, analysis_type)
     nmw = floor((diff(testwin) / dt - wns) / sht) + 1;   % number of overlapping windows 
 
     % Separate cell IDs according to groups
-    group_names = {'Inh', 'Act', 'Inh-Act', 'Act-Inh', 'NonResp'};
+    group_names = {'Inh', 'Act', 'NonResp'};
     Matrix = {MC, ME};
 
     idexp = cell(1, 5);
     idct = cell(1, 5);
-    for g = 1:length(group_names)
-        groupIndicesE = (ME == group_names{g});
-        idexp{g} = cellids_exp(groupIndicesE, :);
-        groupIndicesC = (MC == group_names{g});
-        idct{g} = cellids_ctrl(groupIndicesC, :);
+    for group = 1:length(group_names)
+        groupIndicesE = (ME == group_names{group});
+        idexp{group} = cellids_exp(groupIndicesE, :);
+        groupIndicesC = (MC == group_names{group});
+        idct{group} = cellids_ctrl(groupIndicesC, :);
     end
 
     % ROC
-    X = cell(1, 2);
-    for m = 1:length(Matrix)
-        if m == 1
+    spike_counts = cell(1, 2);
+    for dataset = 1:length(Matrix)
+        if dataset == 1
             choosecb('MS_WM_CTRL_cellbase');
             cellids = idct;
         else
@@ -77,15 +84,15 @@ function roc_analysis(resdir, testwin, cleaned_data, analysis_type)
             cellids = idexp;
         end
 
-        X{1, m} = cell(1, length(group_names));
+        spike_counts{1, dataset} = cell(1, length(group_names));
 
-        for g = 1:length(group_names)
+        for group = 1:length(group_names)
             % Set the number of windows 
-            X{1, m}{g} = nan(length(cellids{1, g}), nmw);
+            spike_counts{1, dataset}{group} = nan(length(cellids{1, group}), nmw);
 
-            for c = 1:length(cellids{1, g})
+            for c = 1:length(cellids{1, group})
                 try
-                    [~, ~, ~, spt] = ultimate_psth_wm(cellids{1, g}{c, 1}, 'trial', 'FixationBeginning', [-2 6], 'dt', 0.001, 'sigma', 0.02, 'isadaptive',0, 'maxtrialno',Inf, 'relative_threshold',0.01,...
+                    [~, ~, ~, spt] = ultimate_psth_wm(cellids{1, group}{c, 1}, 'trial', 'FixationBeginning', [-2 6], 'dt', 0.001, 'sigma', 0.02, 'isadaptive',0, 'maxtrialno',Inf, 'relative_threshold',0.01,...
                        'event_filter', 'lowfixation_wm', 'display', false, 'issave', false);
 
                     % Find spt in delay window
@@ -102,14 +109,14 @@ function roc_analysis(resdir, testwin, cleaned_data, analysis_type)
                         inx2 = inx1 + wns - 1;
                         % Compute data for the whole delay window
                         if strcmp(analysis_type,'submean')
-                            X{1, m}{g}(c, w) = mean(mean(spt_delay(:, inx1:inx2),2) - mean_baseline);
+                            spike_counts{1, dataset}{group}(c, w) = mean(mean(spt_delay(:, inx1:inx2),2) - mean_baseline);
                         elseif strcmp(analysis_type,'norm')
-                            X{1, m}{g}(c, w) = mean(mean(spt_delay(:, inx1:inx2),2) - mean_baseline ./ std_baseline);
+                            spike_counts{1, dataset}{group}(c, w) = mean(mean(spt_delay(:, inx1:inx2),2) - mean_baseline ./ std_baseline);
                         else 
-                            X{1, m}{g}(c, w) = mean(mean(spt_delay(:, inx1:inx2),2));
+                            spike_counts{1, dataset}{group}(c, w) = mean(mean(spt_delay(:, inx1:inx2),2));
                         end
                     end
-                    disp(['Cell #' num2str(c) ' / ' num2str(length(cellids{1, g})) ' done......'])
+                    disp(['Cell #' num2str(c) ' / ' num2str(length(cellids{1, group})) ' done......'])
                 catch
                     disp('error');
                     continue;
@@ -119,36 +126,36 @@ function roc_analysis(resdir, testwin, cleaned_data, analysis_type)
     end
 
     fnmm= ['ROC_data' analysis_type '.mat'];
-    save(fullfile(rocdir,fnmm),'X','-mat');
+    save(fullfile(rocdir,fnmm),'spike_counts','-mat');
     
     % ROC plot
     ROCtime = linspace(testwin(1), testwin(2),nmw);
-    ROC=nan(5,nmw);
-    SE=nan(5,nmw);
-    pvalues=nan(5,nmw);
-    for g = 1:length(group_names)
+    ROC=nan(3,nmw);
+    SE=nan(3,nmw);
+    pvalues=nan(3,nmw);
+    for group = 1:length(group_names)
         for w = 1:nmw
-            [ROC(g,w),pvalues(g,w),SE(g,w)]=rocarea(X{1,1}{1,g}(:,w),X{1,2}{1,g}(:,w),'bootstrap',5000); 
+            [ROC(group,w),pvalues(group,w),SE(group,w)]=rocarea(spike_counts{1,1}{1,group}(:,w),spike_counts{1,2}{1,group}(:,w),'bootstrap',5000); 
         end
         figure   % plot
         yyaxis left 
-        b=bar(ROCtime,pvalues(g,:)); 
+        b=bar(ROCtime,pvalues(group,:)); 
         b.FaceAlpha=0.5; 
         ylabel('p value');
         hold on; 
         yyaxis right 
-        h=plot(ROCtime,ROC(g,:)); 
+        h=plot(ROCtime,ROC(group,:)); 
     
         ylabel('ROC','Rotation',-90);
         allChildren=get(gca, 'Children'); 
         newOrder=[setdiff(allChildren,h);h]; 
         set(gca, 'Children', newOrder)
         set(gca, 'TickDir', 'out', 'Box', 'off');
-        title([group_names(g)]);
+        title([group_names(group)]);
     
-        fnm=[ 'ROC___' num2str(g) '.png'];
+        fnm=[ 'ROC3G___' num2str(group) '.png'];
         saveas(gcf, fullfile(rocdir,fnm ));
-        fnm2=[ 'ROC___' num2str(g) '.fig'];
+        fnm2=[ 'ROC3G___' num2str(group) '.fig'];
         saveas(gcf, fullfile(rocdir,fnm2 ));
         close(gcf); 
     end
