@@ -31,7 +31,7 @@ function [normalizedDataWithoutNaN, normalizedPSTH, numPSTH, delayDataWithoutNaN
 %       % With custom baseline and delay periods:
 %       normalizedData = normalize_psth(spsth_data, time, [-1, 0], [0.1, 0.8]);
 %
-%
+
 %  Malek Aouadi, Laboratory of Systems Neuroscience
 %  Institute of Experimental Medicine, Budapest, Hungary
 %  2025

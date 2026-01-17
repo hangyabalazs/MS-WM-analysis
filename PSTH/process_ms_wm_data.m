@@ -1,7 +1,7 @@
 function cleaned_data = process_ms_wm_data(resdir, varargin)
 %PROCESS_MS_WM_DATA - Process and clean electrophysiology data.
 %     PROCESS_MS_WM_DATA(RESDIR) performs full pipeline processing including:
-%   - Spike sorting and filtering
+%   - Filtering cells based on Lratio and ID
 %   - Peri-Stimulus Time Histogram (PSTH) computation
 %   - Delay response categorization
 %   - Theta index calculation
@@ -32,7 +32,7 @@ function cleaned_data = process_ms_wm_data(resdir, varargin)
 % Example:
 %   % Basic call with default settings
 %   cleaned_data = process_ms_wm_data('E:\WorkingMemory\Data\Processed');
-%
+
 %  Malek Aouadi, Laboratory of Systems Neuroscience
 %  Institute of Experimental Medicine, Budapest, Hungary
 %  2025
@@ -113,6 +113,7 @@ function cleaned_data = process_ms_wm_data(resdir, varargin)
     toc
 end
 
+% -------------------------------------------------------------------------
 function dirs = create_result_directories(resdir)
 % Creates result directories structure
 

@@ -1,28 +1,55 @@
-function [groupCountsExp, groupCountsCtrl] = figure4_panel(datadir, resdir, cleaned_data, issave, varargin )
-% FIGURE3_PANEL Generate figure panels comparing experimental and control neuron responses.
-%   [GROUPCOUNTSEXP, GROUPCOUNTSCTRL] = FIGURE3_PANEL(DATADIR, RESDIR, CLEANED_DATA, ISSAVE, VARARGIN) 
-%   generates Figure 4 comparing experimental and control neuron responses.
-%   Chi-square test results are saved as an Excel file in the specified results directory.
+function figure4_panel(datadir, resdir, cleaned_data, issave, varargin)
+%FIGURE4_PANEL  Generate panels for Figure 4 comparing experimental and control neuron responses.
+%   FIGURE4_PANEL(DATADIR, RESDIR, CLEANED_DATA, ISSAVE) generates a multi-panel figure
+%   comparing normalized peristimulus time histograms (PSTHs) and response category
+%   distributions between experimental and control neuronal populations. By default,
+%   neurons are grouped using statistical response categories ('Inhibited', 'Activated',
+%   'Non-responsive'). Alternatively, user-provided cluster assignments can be used
+%   if both 'clusters_exp' and 'clusters_ctrl' are specified.
 %
-%   Inputs:
-%       datadir       - Directory containing input data files.
-%       resdir        - Directory where results (figures, Excel files) will be saved.
-%       cleaned_data  - Preprocessed data structure with PSTH and categorization matrices.
-%       issave        - Logical flag to save figures (true/false).
+%   FIGURE4_PANEL(..., 'delay', DELAY) specifies the delay period window as a
+%   two-element vector [start end] in seconds. Default: [0.2 1].
 %
-%   Optional parameter-value pairs:
-%       'delay'       - Delay period time window [start, end]. Default: [0.2, 1].
-%       'window'      - Time window for analysis [start, end]. Default: [-2, 6].
-%       'dt'          - Time resolution of bin raster in seconds. Default: 0.001.
+%   FIGURE4_PANEL(..., 'window', WINDOW) specifies the full PSTH time window as
+%   [start end] in seconds. Default: [-2 6].
+%
+%   FIGURE4_PANEL(..., 'dt', DT) specifies the time bin resolution in seconds.
+%   Default: 0.001.
+%
+%   FIGURE4_PANEL(..., 'clusters_exp', CLUSTERS_EXP, 'clusters_ctrl', CLUSTERS_CTRL)
+%   specifies cluster assignments for experimental and control neurons as numeric
+%   vectors of integers. Both parameters must be provided together; if either is 
+%   omitted or empty, the function reverts to statistical grouping for both groups.
+%
+%   Input arguments:
+%     DATADIR        - Character vector specifying the input data directory.
+%                      Must contain 'Speaker_picture.png'.
+%     RESDIR         - Character vector specifying the output/results directory.
+%     CLEANED_DATA   - Structure containing preprocessed data with fields:
+%                        .spsth_data.normPSTH_exp_cl
+%                        .spsth_data.normPSTH_ctrl_cl
+%                        .delay_response.ResponseCategoriExp
+%                        .delay_response.ResponseCategoriCtrl
+%     ISSAVE         - Logical scalar indicating whether to save figures.
+%
+%   The function produces:
+%     - A main figure with heatmaps, average PSTHs (±SEM), and pie charts.
+%     - An Excel file 'StatResults.xlsx' in DATADIR containing group counts and
+%       chi-square test results. Statistical grouping results are written to
+%       sheet 1; clustering-based results (when both cluster inputs are provided)
+%       are written to sheet 2.
+%     - Additional example neuron panels saved via EXAMPLE_PANELS.
 %
 %   Example:
-%       figure4_panel('data/', 'results/',  cleaned_data, true);
+%       % Use default statistical grouping
+%       figure4_panel('data/', 'results/', cleaned_data, true);
 %
-%   Note:
-%       Make sure the speaker image used in the figure is present in datadir.
+%       % Use custom cluster assignments (both required)
+%       figure4_panel('data/', 'results/', cleaned_data, true, ...
+%           'clusters_exp', exp_clusters, 'clusters_ctrl', ctrl_clusters);
 %
-% See also: GROUPING_PANEL_EXP, GROUPING_PANEL_CTRL.
-%
+%   See also EXAMPLE_PANELS, PROCESS_MS_WM_DATA.
+
 %  Malek Aouadi, Laboratory of Systems Neuroscience
 %  Institute of Experimental Medicine, Budapest, Hungary
 %  2025
@@ -36,6 +63,8 @@ function [groupCountsExp, groupCountsCtrl] = figure4_panel(datadir, resdir, clea
     addParameter(prs, 'delay',[0.2 1]);                 % Delay period window [start end]
     addParameter(prs, 'window',[-2 6]);                  % Time window for PSTH data aligned to FixationBeginning
     addParameter(prs,'dt',0.001,@isnumeric);            % Time resolution of bin raster in seconds
+    addParameter(prs,'clusters_exp',[],@isnumeric);            % Cluster assignments for Exp
+    addParameter(prs,'clusters_ctrl',[],@isnumeric);            % Cluster assignments for Ctrl
     parse(prs,datadir,resdir,cleaned_data, issave,varargin{:});
     g = prs.Results;
     
@@ -49,14 +78,29 @@ function [groupCountsExp, groupCountsCtrl] = figure4_panel(datadir, resdir, clea
     normPSTH_ctrl = cleaned_data.spsth_data.normPSTH_ctrl_cl;
     normPSTH_exp = cleaned_data.spsth_data.normPSTH_exp_cl;
     
-    % Define grouping matrices and labels 
-    grouping_matrixCtrl = cleaned_data.delay_response.ResponseCategoriCtrl;
-    grouping_matrixExp= cleaned_data.delay_response.ResponseCategoriExp;
-    group_names = {'Inh','Act','Inh-Act','Act-Inh', 'NonResp'};
-    labels = {'Inhibited','Activated','Inhibited then activated','Activated then inhibited','NonResponsive'};
-    
-    
-    numGroups = 5;                                     % Number of groups/categories
+    % Define grouping matrices 
+    if isempty(g.clusters_exp)
+        grouping_matrix_ctrl = cleaned_data.delay_response.ResponseCategoriCtrl; % use stat based grouping
+        grouping_matrix_exp = cleaned_data.delay_response.ResponseCategoriExp;
+    else 
+        grouping_matrix_ctrl = g.clusters_ctrl; % use clustering assignemnts 
+        grouping_matrix_exp = g.clusters_exp;
+    end
+    if isa(grouping_matrix_ctrl, 'cell') 
+        grouping_matrix_exp = merge_groups(grouping_matrix_exp);
+        grouping_matrix_ctrl = merge_groups(grouping_matrix_ctrl);
+    end
+
+    % Define roup names and labels for 3 groups
+    if isempty(g.clusters_exp)
+        group_names = {'Inh','Act','NonResp'};
+        labels = {'Inhibited','Activated','Non-responsive'};
+    else 
+       group_names = {'Cluster 1', 'Cluster 2', 'Cluster 3'};
+       labels = {'Cluster 1', 'Cluster 2', 'Cluster 3'};
+    end
+    numGroups = 3;                                     % Number of groups/categories
+
     time = (g.window(1):g.dt:g.window(2));             % Time vector for PSTH
     
     try
@@ -65,15 +109,16 @@ function [groupCountsExp, groupCountsCtrl] = figure4_panel(datadir, resdir, clea
         disp('Speaker image not found in data directory. Please make sure it is present before proceeding');
     end
     
-    colors = {"#66CDAA","#EA9782","#0072BD", "#FF8383","#6161a7"}; % Colors for groups
-    
+    % Use first 3 colors for 3 groups
+    colors = {"#66CDAA","#EA9782","#6161a7"}; 
+
     % Sort and compute statistics for experimental group PSTHs
-    [averageExp, SEExp, groupCountsExp, psthsExp, groupboundariesExp, ~ ] = ...
-        group_sort_psths(g, numGroups, group_names, grouping_matrixExp, normPSTH_exp, time);
+    [averageExp, SEExp, groupCountsExp, psthsExp, groupboundariesExp, time_cut] = ...
+        group_sort_psths(g, numGroups, group_names, grouping_matrix_exp, normPSTH_exp, time);
     
     % Sort and compute statistics for control group PSTHs
     [averageCtrl, SECtrl, groupCountsCtrl, psthsCtrl, groupboundariesCtrl, time_cut] = ...
-        group_sort_psths(g, numGroups, group_names, grouping_matrixCtrl, normPSTH_ctrl, time);
+        group_sort_psths(g, numGroups, group_names, grouping_matrix_ctrl, normPSTH_ctrl, time);
     
     filename = fullfile(datadir, 'StatResults.xlsx'); % Define Excel file path for saving stats
     
@@ -83,8 +128,8 @@ function [groupCountsExp, groupCountsCtrl] = figure4_panel(datadir, resdir, clea
     groupData = [cellstr(labels(:)), num2cell(groupCountsExp'), num2cell(groupCountsCtrl'), emptyCol];
     
     % Perform Chi-square tests 
-    % Test: Exp neurons with significant change (groups 1-4) vs non-responsive (group 5)
-    observed = [sum(groupCountsExp(1:4)), groupCountsExp(5)];
+    % Test: Exp neurons with significant change (groups 1-2) vs non-responsive (group 3)
+    observed = [sum(groupCountsExp(1:2)), groupCountsExp(3)];
     expected = [sum(groupCountsExp)*0.05, sum(groupCountsExp)*0.95]; % Chance level expected counts
     [~, pval_chi, stats] = chi2gof(observed, 'Expected', expected, 'Emin', 5);
     fprintf('Chi-square goodness of fit test, Exp neurons significant change vs non-responsive\n');
@@ -92,23 +137,15 @@ function [groupCountsExp, groupCountsCtrl] = figure4_panel(datadir, resdir, clea
     fprintf('Degrees of freedom: %.3f\n', stats.df);
     fprintf('Chi-square test p-value: %.4e\n', pval_chi);
     
-    % Test: Exp vs Ctrl by primary response (3 categories)
-    fprintf('Chi-square test, Exp vs Ctrl, grouped by primary response (3 categories)\n');
-    [chi_stat_1, p_value_1, df_1] = chiSquareTest([groupCountsExp(1)+groupCountsExp(3), ...
-        groupCountsExp(2)+groupCountsExp(4), groupCountsExp(5); ...
-        groupCountsCtrl(1)+groupCountsCtrl(3), ...
-        groupCountsCtrl(2)+groupCountsCtrl(4), groupCountsCtrl(5)], 0.001);
-    
-    % Test: Exp vs Ctrl full category distribution (5 categories)
-    fprintf('Chi-square test, Exp vs Ctrl, (5 categories)\n');
+    % Test: Exp vs Ctrl full category distribution (3 categories)
+    fprintf('Chi-square test, Exp vs Ctrl, (3 categories)\n');
     [chi_stat_2, p_value_2, df_2] = chiSquareTest([groupCountsExp; groupCountsCtrl], 0.001);
     
     % Prepare table for writing to Excel
     testRows = {
         'Stat grouping', 'Chi-square Statistic', 'Degrees of Freedom', 'p-value';
         'Exp neurons significant change vs non-responsive', stats.chi2stat, stats.df, pval_chi;
-        'Exp vs Ctrl, grouped by primary response (3 categories)', chi_stat_1, df_1, p_value_1;
-        'Exp vs Ctrl, full category distribution (5 categories)', chi_stat_2, df_2, p_value_2;
+        'Exp vs Ctrl, full category distribution (3 categories)', chi_stat_2, df_2, p_value_2;
     };
     
     % Combine group counts and test results into one cell array
@@ -122,8 +159,11 @@ function [groupCountsExp, groupCountsCtrl] = figure4_panel(datadir, resdir, clea
     ];
     
     % Write combined data to second sheet of Excel file
-    writecell(combined, filename, 'Sheet', 2);
-    
+    if isempty(g.clusters_exp)
+        writecell(combined, filename, 'Sheet', 1);
+    else
+        writecell(combined, filename, 'Sheet', 2);
+    end
     
     % Create figure and plot panels
     figure;
@@ -155,20 +195,31 @@ function [groupCountsExp, groupCountsCtrl] = figure4_panel(datadir, resdir, clea
     set(gcf, 'Renderer', 'painters'); % Use painters renderer for figure output
     
     % Define filename
-    fnm = 'Fig4AB';
+    if isempty(g.clusters_exp)
+        fnm = 'Fig4AB_Stat';
+    else 
+        fnm = 'FigS4AB_Clust';
+    end
     
     % Save figures if requested
     if issave
-        saveas(gcf, [resdir '\' fnm '_Stat.svg']);
-        saveas(gcf, [resdir '\' fnm '_Stat.jpg']);
+        saveas(gcf, [resdir '\' fnm '.svg']);
+        saveas(gcf, [resdir '\' fnm '.jpg']);
     end
     
-    % Generate additional panels: Fig3C & S5C 
-    grouping_panel_exp(resdir, datadir, grouping_matrixExp, normPSTH_exp);
-    grouping_panel_ctrl(resdir, datadir, grouping_matrixCtrl, normPSTH_ctrl);
-
+    % Generate additional panels: Fig4C & S3C for stat based grouping and
+    % S4C & S5 for clustering
+    if isempty(g.clusters_exp)
+        example_panels(resdir,  grouping_matrix_exp, normPSTH_exp, 'stat', 'exp');
+        example_panels(resdir,  grouping_matrix_ctrl, normPSTH_ctrl, 'stat', 'ctrl');
+    else 
+        example_panels(resdir,  grouping_matrix_exp, normPSTH_exp, 'clust', 'exp');
+        example_panels(resdir,  grouping_matrix_ctrl, normPSTH_ctrl, 'clust', 'ctrl');
+    end
+  
 end
 
+% -------------------------------------------------------------------------
 function [averages, SE, groupCounts, psths, groupboundaries, time_cut] = group_sort_psths(g,...
     numGroups, group_names, grouping_matrix, psth_data, time)
 % Groups and sorts PSTHs based on neuron classifications,
@@ -186,32 +237,46 @@ function [averages, SE, groupCounts, psths, groupboundaries, time_cut] = group_s
         if isa(grouping_matrix,'double')
             % Numeric grouping: find indices directly
             groupIndices = find(grouping_matrix == group);
-            groupCounts (group) = sum(grouping_matrix == group);
+            groupCounts(group) = sum(grouping_matrix == group);
         else
             % Cell array of strings grouping: match group names
             groupLabel = group_names{group};
             groupIndices = find(strcmp(grouping_matrix, groupLabel));
-            groupCounts = arrayfun(@(group) sum(strcmp(grouping_matrix,group)), group_names); 
+            % Note: we compute groupCounts per group here
+            groupCounts(group) = length(groupIndices);
         end
         
         % Extract PSTHs for group cells
-        psths{group} = psth_data(groupIndices,:);
-        % Compute average PSTH across cells in group
-        averages{group} = mean(psths{group}, 1);
-        % Compute standard error of the mean PSTH
-        SE{group} = std(psths{group})/sqrt(size(psths{group}, 1));
+        if ~isempty(groupIndices)
+            psths{group} = psth_data(groupIndices,:);
+            % Compute average PSTH across cells in group
+            averages{group} = mean(psths{group}, 1);
+            % Compute standard error of the mean PSTH
+            SE{group} = std(psths{group})/sqrt(size(psths{group}, 1));
+        else
+            % Handle empty group
+            nTime = length(time);
+            psths{group} = zeros(0, nTime);
+            averages{group} = zeros(1, nTime);
+            SE{group} = zeros(1, nTime);
+        end
     end
 
     sorted_psths = cell(1, numGroups);
     
     % Sort cells within each group by peak activity during delay period
     for group = 1:numGroups
+        if isempty(psths{group}) || size(psths{group},1) == 0
+            sorted_psths{group} = [];
+            continue;
+        end
+        
         numCells = size(psths{group}, 1);
         mx = zeros(numCells, 1);
     
         for iCell = 1:numCells
-            delay_start =g.delay(1);
-            delay_end=g.delay(2);
+            delay_start = g.delay(1);
+            delay_end = g.delay(2);
             delay_idx = (time >= delay_start) & (time <= delay_end);
             % Find max firing rate within delay window for each cell
             mx(iCell) = max(psths{group}(iCell, delay_idx), [], 2);
@@ -223,12 +288,25 @@ function [averages, SE, groupCounts, psths, groupboundaries, time_cut] = group_s
     end
     
     % Concatenate sorted PSTHs from all groups into one matrix
-    psths = nan(length(grouping_matrix), size(time, 2));
-    psths(1:groupCounts(1), :) = sorted_psths{1};
-    psths(groupCounts(1)+1:sum(groupCounts(1:2)), :) = sorted_psths{2};
-    psths(sum(groupCounts(1:2))+1:sum(groupCounts(1:3)), :) = sorted_psths{3};
-    psths(sum(groupCounts(1:3))+1:sum(groupCounts(1:4)), :) = sorted_psths{4};
-    psths(sum(groupCounts(1:4))+1:end, :) = sorted_psths{5};
+    totalCells = sum(groupCounts);
+    if totalCells > 0
+        psths = nan(totalCells, size(time, 2));
+        
+        % Compute cumulative group counts to determine row ranges
+        cumCounts = cumsum([0; groupCounts(:)]); % [0, g1, g1+g2, ...]
+        
+        % Loop over each group
+        for i = 1:length(sorted_psths)
+            if isempty(sorted_psths{i})
+                continue;
+            end
+            startIdx = cumCounts(i) + 1;
+            endIdx   = cumCounts(i + 1);
+            psths(startIdx:endIdx, :) = sorted_psths{i};
+        end
+    else
+        psths = [];
+    end
     
     % Calculate group boundary indices for plotting separation lines
     groupboundaries = cumsum(groupCounts);
@@ -237,13 +315,17 @@ function [averages, SE, groupCounts, psths, groupboundaries, time_cut] = group_s
     % Trim time window & psth matrix to focus on relevant period (-0.504 to 1.505 sec)
     [~, time_start_index] = min(abs(time - (-0.504)));
     [~, time_end_index] = min(abs(time - 1.505));
-    time_cut = time(:,time_start_index:time_end_index);
-    psths = psths(:, time_start_index:time_end_index);
+    time_cut = time(time_start_index:time_end_index);
+    if ~isempty(psths)
+        psths = psths(:, time_start_index:time_end_index);
+    end
     
     % Trim averages and SE matrices accordingly
     for iG = 1:numGroups
-        SE{iG} = SE{iG}(time_start_index:time_end_index);
-        averages{iG} = averages{iG}(time_start_index:time_end_index);
+        if ~isempty(averages{iG})
+            SE{iG} = SE{iG}(time_start_index:time_end_index);
+            averages{iG} = averages{iG}(time_start_index:time_end_index);
+        end
     end
 
 end
@@ -251,6 +333,11 @@ end
 
 function plot_heatmap(time, psths, groupboundaries, width, speaker_image, speaker_x, speaker_y)
 % Plots heatmap of sorted PSTHs with group separation lines and overlays a speaker image.
+
+    if isempty(psths)
+        warning('No PSTH data to plot in heatmap.');
+        return;
+    end
 
     imagesc(time, 1:size(psths, 1), psths);
     ylabel('Neuron #');
@@ -280,9 +367,12 @@ function plot_avg(time, average, SE, colors, speaker_image,  speaker_x,  speaker
 
     hold on
     for iC = 1:length(average)
+        if isempty(average{iC})
+            continue;
+        end
         errorshade(time, average{iC}, SE{iC}, 'LineColor', colors{iC}, 'ShadeColor', 'black', 'FaceAlpha', 0.4);
     end
-    ylim([-6, 6]);
+    ylim([-3.5, 3.5]);
     xlim([time(1), time(end)]);
     xlabel('Time from cue onset (s)');
     ylabel('Average SPSTH');
@@ -346,13 +436,13 @@ end
 function plot_piechart(groupCounts, dataset, colors, labels)
 % Creates a pie chart to show proportions of neuron response categories.
 
-    numGroups=size(groupCounts,2);
+    numGroups = size(groupCounts,2);
     explode = ones(1, numGroups); % Explode all slices equally
     
-    h = pie(groupCounts, explode);
+    h = pie(groupCounts,  explode, '%.1f%%');
     
     % Color each pie slice according to group colors
-     for iC = 1:size(groupCounts,2)
+     for iC = 1:numGroups
          h(2 * iC - 1).FaceColor = colors{iC};
      end
     
@@ -362,5 +452,28 @@ function plot_piechart(groupCounts, dataset, colors, labels)
      end
     
     hold off;
+end
 
+function grouping_matrix = merge_groups(grouping_matrix)
+% Merge groups Inh-Act and Inh, Act-Inh and Act
+
+% Map original group indices to merged groups
+merge_map = [1, 2, 1, 2, 3]; % old index to new index
+if isa(grouping_matrix, 'double')
+    grouping_matrix = merge_map(grouping_matrix);
+else
+    % If cellstr, map based on original group names
+    orig_names = {'Inh','Act','Inh-Act','Act-Inh', 'NonResp'};
+    new_grouping = cell(size(grouping_matrix));
+    for i = 1:length(grouping_matrix)
+        idx = find(strcmp(orig_names, grouping_matrix{i}));
+        new_group = merge_map(idx);
+        switch new_group
+            case 1, new_grouping{i} = 'Inh';
+            case 2, new_grouping{i} = 'Act';
+            case 3, new_grouping{i} = 'NonResp';
+        end
+    end
+    grouping_matrix = new_grouping;
+end
 end

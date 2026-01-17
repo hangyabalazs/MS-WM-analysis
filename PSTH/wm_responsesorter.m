@@ -23,7 +23,7 @@ function responses = wm_responsesorter(cellids, issave, wn, response_resdir, coh
 %       RESPONSES       - Cell array with response categories per cell
 %
 %   See also: ULTIMATE_PSTH, PSTH_STATS, LRATIO
-%
+
 %   Adapted from:
 %   Balazs Hangya, Panna Hegedus
 %   Institute of Experimental Medicine, Hungarian Academy of Sciences
@@ -69,7 +69,6 @@ function responses = wm_responsesorter(cellids, issave, wn, response_resdir, coh
     end
     
     % Main Loop: Process Each Cell
-    
     responses = cell(numCells, 1); 
     
     for iC = 1:numCells
@@ -85,7 +84,6 @@ function responses = wm_responsesorter(cellids, issave, wn, response_resdir, coh
     
         % Determine response type based on stats
         stat = stats1{1};
-    
         if stat.inhibition_start < stat.activation_start && ...
                 stat.Wpi < 0.01 && stat.Wpa < 0.01
             setvalue(cellid, propname, 'Inh-Act');
@@ -104,7 +102,6 @@ function responses = wm_responsesorter(cellids, issave, wn, response_resdir, coh
             setvalue(cellid, propname, 'NonResp');
             resp = 'NonResp';
         end
-    
         responses{iC} = resp;
     
         % Update progress
@@ -124,7 +121,8 @@ function responses = wm_responsesorter(cellids, issave, wn, response_resdir, coh
     end
     
 end 
-    
+
+% -------------------------------------------------------------------------    
 function stats1 = rasterPSTH(cellid, alignevent, partition, wn, dt, sigma, bwin, twin)
 % PSTH calculation wrapper
     

@@ -343,6 +343,7 @@ for iC = 1:numCells   % loop through the cells
         disp(['Cell #' num2str(iC) ' / ' num2str(numCells) ' done......'])
         close(gcf);
     end
+    time=time(:,inx);
     waitbar(iC/numCells)
 end
     % Save
@@ -353,7 +354,6 @@ end
             disp('Autosave done.')
         end
     end
-    time=time(:,inx);
     if ~isempty(g.shevent)&& g.display==false
         if strcmp(g.parts,'#Outcome')
             EventTimes = struct('Reward',EventTimesR, 'Punishment', EventTimesP, 'TrialEnds', EventTimesEnd);
@@ -361,7 +361,11 @@ end
     end
     % Save
      if g.issave
-         save(fullfile(g.resdir,fnmm),'cellids','spsth_all','time','EventTimes')
+         if ~isempty(g.shevent)
+             save(fullfile(g.resdir,fnmm),'cellids','spsth_all','time','EventTimes')
+         else
+             save(fullfile(g.resdir,fnmm),'cellids','spsth_all','time')
+         end
      end
     
 close(wb)   % eliminate progress indicator
